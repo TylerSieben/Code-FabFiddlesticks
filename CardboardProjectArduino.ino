@@ -10,26 +10,12 @@ Servo servoLamp;
 Servo servoScythe;
 //Servo servoJaw;
 
+//Piezo Buzzer setup
 const int buzzerPin = 7;
 
 //Digital Output
 const int ledPinL = 12;
 const int ledPinR = 13;
-
-//Timer for reset
-unsigned long resetTime;
-unsigned long resetPrev = 0;
-int resetLength = 10000;
-
-//Timer for Main
-unsigned long currentTime;
-unsigned long previousTime = 0;
-int timerLength = 5000;
-
-//Timer for second
-unsigned long currentTimeSec;
-unsigned long previousTimeSec = 0;
-int timerLengthSec = 1000;
 
 //Completed Variables
 bool scythe = false;
@@ -37,18 +23,17 @@ bool jaw = false;
 bool chest = false;
 bool lamp = false;
 
-//Timer sensor
+//Timer Setup
 unsigned long currentTimeSens;
 unsigned long previousTimeSens = 0;
 unsigned long paused = 0;
 int timerLengthSens = 1000;
+int resetLength = 10000;
 
 //Setup for Outputs
 void setup() {
   servoLamp.attach(3);
   servoScythe.attach(5);
-  //servoJaw.attach(6);
-
   pinMode(buzzerPin, OUTPUT);
   pinMode(ledPinL, OUTPUT);
   pinMode(ledPinR, OUTPUT);
@@ -59,12 +44,14 @@ void loop()
 {
   // put your main code here, to run repeatedly:
   currentTimeSens = millis();
+  //Timer for the Ultrasonic to read a distance every second
   if(currentTimeSens - previousTimeSens >= timerLengthSens)
   {
     previousTimeSens = currentTimeSens;
     distance = ultrasonic.read();
     Serial.print("Distance in CM: "); //Debugging
     Serial.println(distance); //Debugging
+    //If the distance is the closest it can be, make the model swing arm.
     if(distance <= 50 && !scythe && jaw)
     {
       //Swing Scythe
@@ -72,6 +59,7 @@ void loop()
       scythe = true;
       Serial.println("Scythe WORKING");
     } 
+    //If the distance is the penultimate distance, Make the screaming noise
     else if(distance <= 65 && !jaw && lamp) 
     {
       //Talking + mouth move
@@ -80,6 +68,7 @@ void loop()
       Serial.println("JAW WORKING");
       delay(1000);
     } 
+    //If the distance is the second furthest distance, raise the lamp arm up
     else if(distance <= 80 && !lamp && chest) 
     {
       //arm raise
@@ -88,6 +77,7 @@ void loop()
       lamp = true;
       Serial.println("LAMP WORKING");
     } 
+    //If the distance is within a good range, the lights turn on, signifying the user is close enough
     else if(distance <= 100 && !chest) 
     {
       //Chest lights up
@@ -97,6 +87,7 @@ void loop()
       delay(1000);
       chest = true;
     }
+    //If everything has run once and the user steps outside the initial distance, have the model return to its default state.
     else if(distance > 100 && chest && lamp && jaw && scythe && paused != 0)
     {
       if(currentTimeSens - paused >= resetLength)
@@ -121,6 +112,7 @@ void loop()
         scythe = false;
       }
     }
+    //update the timer for resets.
     else
     {
       paused = currentTimeSens;
@@ -140,6 +132,7 @@ void armSwing()
 void mouthNoises()
 {
   //Servo code for the upper and lower mouth to move. Probably just going to be the lower jaw moving as it makes noises.
+  //Update: jaw code was never created as there was limited time and hardware to create the movement of the jaw
   for(int i = 0; i < 3; i++)
   {
     tone(buzzerPin, 740);
